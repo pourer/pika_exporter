@@ -1,6 +1,6 @@
 # Pika Metric Exporter #
 
-Prometheus expoter for Pika metrics. Suppots Pika 2.x,3.x
+Prometheus expoter for nosql Pika([https://github.com/Qihoo360/pika](https://github.com/Qihoo360/pika)) metrics. Suppots Pika 2.x,3.x
 
 Pika-Expoter is based on Redis-Exporter([https://github.com/oliver006/redis_exporter](https://github.com/oliver006/redis_exporter)).
 
@@ -38,7 +38,7 @@ scrape_configs:
 ## Flags ##
 Name | Environment Variables | Default | Description | Example
 ---|---|---|---|---
-pika.host-file | PIKA_HOST_FILE | | Path to file containing one or more pika nodes, separated by newline. NOTE: mutually exclusive with pika.addr.Each line can optionally be comma-separated with the fields `<addr>`,`<password>`,`<alias>`. See [here](https://github.com/pourer/pika_exporter/tree/master/contrib/sample_pika_hosts_file.txt) for an example file.| --pika.host-file ./pika_hosts_file.txt
+pika.host-file | PIKA_HOST_FILE | | Path to file containing one or more pika nodes, separated by newline. NOTE: mutually exclusive with pika.addr.Each line can optionally be comma-separated with the fields `<addr>`,`<password>`,`<alias>`. See [here](https://github.com/pourer/pika_exporter/raw/master/contrib/sample_pika_hosts_file.txt) for an example file.| --pika.host-file ./pika_hosts_file.txt
 pika.addr | PIKA_ADDR | | Address of one or more pika nodes, separated by comma. | --pika.addr 192.168.1.2:9221,192.168.1.3:9221
 pika.password | PIKA_PASSWORD | | Password for one or more pika nodes, separated by comma. | --pika.password 123.com,123.com
 pika.alias | PIKA_ALIAS | | Pika instance alias for one or more pika nodes, separated by comma. | --pika.alias a,b
@@ -128,8 +128,14 @@ set_keys | The number of set-kv of the keyspace obtained by the INFO command is:
 zset_keys | The number of zset-kv of the keyspace obtained by the INFO command is: zset keys: 0, pika_exporter treats it as: zset_keys:0
 
 
-You can customize the metrics definition file as as needed. The format of the metrics definition file: .ini.
+You can customize the metrics definition file as as needed. The format of the metrics definition file: `.ini`.
 
+For example:
+```
+[uptime_in_seconds]
+labels = addr,alias
+value = uptime_in_seconds
+```
 Described as follows:
 > `Section` in the configuration file is the name of the collection indicator. The view in prometheus is: `namesapce`_section, for example(the `default namespace` is `pika`): pika_build_info
 
@@ -148,7 +154,7 @@ Described as follows:
     5) The rest of the situation directly converts the string to float
 6. If the index value is converted to float, the value of the corresponding collection indicator is: 0.
 
-The metrics information defined in the [default_pika_metrics_file.ini](https://github.com/pourer/pika_exporter/tree/master/contrib/default_pika_metrics_file.ini) file is used as the **`default collection standard`**. 
+The metrics information defined in the [default_pika_metrics_file.ini](https://github.com/pourer/pika_exporter/raw/master/contrib/default_pika_metrics_file.ini) file is used as the **`default collection standard`**. 
 
 ## Keys Metrics Definition ##
 You can export values of keys if they're in numeric format by using the --check.key-patterns or --check.keys flag. The pika_exporter will export the size (or, depending on the data type, the length) and the value of the key.
@@ -168,11 +174,15 @@ Since `Hyperloglog` is not commonly used, then the key in `Hyperloglog-Structure
 
 ## Grafana Dashboard ##
 
-See [here](https://github.com/pourer/pika_exporter/tree/master/contrib/grafana_prometheus_pika_dashboard.json)
+See [here](https://github.com/pourer/pika_exporter/raw/master/contrib/grafana_prometheus_pika_dashboard.json)
 
 Screenshots:  
-<img width="800" alt="pika_exporter_screen_01" src="https://github.com/pourer/pika_exporter/tree/master/contrib/overview.png"><br>
-<img width="800" alt="pika_exporter_screen_02" src="https://github.com/pourer/pika_exporter/tree/master/contrib/base_info.png">
-<img width="800" alt="pika_exporter_screen_03" src="https://github.com/pourer/pika_exporter/tree/master/contrib/replication.png">
-<img width="800" alt="pika_exporter_screen_04" src="https://github.com/pourer/pika_exporter/tree/master/contrib/time_consuming_operation.png">
-<img width="800" alt="pika_exporter_screen_05" src="https://github.com/pourer/pika_exporter/tree/master/contrib/keys_metrics.png">
+![Overview](https://github.com/pourer/pika_exporter/raw/master/contrib/overview.png)
+
+![BaseInfo](https://github.com/pourer/pika_exporter/raw/master/contrib/base_info.png)
+
+![Replication](https://github.com/pourer/pika_exporter/raw/master/contrib/replication.png)
+
+![TimeConsumingOperation](https://github.com/pourer/pika_exporter/raw/master/contrib/time_consuming_operation.png)
+
+![KeysMetrics](https://github.com/pourer/pika_exporter/raw/master/contrib/keys_metrics.png)
