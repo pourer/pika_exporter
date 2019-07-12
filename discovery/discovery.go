@@ -89,7 +89,10 @@ func NewFileDiscovery(fileName string) (*fileDiscovery, error) {
 			instance.Addr = record[0]
 		default:
 			log.Warnln("pika hosts file has invalid data:", record)
+			continue
 		}
+
+		instances = append(instances, instance)
 	}
 
 	return &fileDiscovery{instances: instances}, nil

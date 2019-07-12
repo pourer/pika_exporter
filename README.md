@@ -1,8 +1,8 @@
 # Pika Metric Exporter #
 
-Prometheus expoter for nosql Pika([https://github.com/Qihoo360/pika](https://github.com/Qihoo360/pika)) metrics. Suppots Pika 2.x,3.x
+Prometheus expoter for nosql [Qihoo360/pika](https://github.com/Qihoo360/pika) metrics. Suppots Pika 2.x,3.x
 
-Pika-Expoter is based on Redis-Exporter([https://github.com/oliver006/redis_exporter](https://github.com/oliver006/redis_exporter)).
+Pika-Expoter is based on [Redis-Exporter](https://github.com/oliver006/redis_exporter)).
 
 ## Buiding ##
 
@@ -128,7 +128,7 @@ set_keys | The number of set-kv of the keyspace obtained by the INFO command is:
 zset_keys | The number of zset-kv of the keyspace obtained by the INFO command is: zset keys: 0, pika_exporter treats it as: zset_keys:0
 
 
-You can customize the metrics definition file as as needed. The format of the metrics definition file: `.ini`.
+You can customize the metrics definition file as as needed. The format of the metrics definition file: `.ini`. See [here](https://github.com/pourer/pika_exporter/raw/master/contrib/default_pika_metrics_file.ini)
 
 For example:
 ```
