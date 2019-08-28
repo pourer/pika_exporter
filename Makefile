@@ -8,7 +8,7 @@ BRANCH			:= $(shell git branch | sed --quiet 's/* \(.*\)/\1/p')
 GITREV 			:= $(shell git rev-parse --short HEAD)
 BUILDTIME 		:= $(shell date '+%F %T %Z')
 COMPILERVERSION	:= $(subst go version ,,$(shell go version))
-PROJNAME        := pika_expoter
+PROJNAME        := pika_exporter
 
 define GENERATE_VERSION_CODE
 cat << EOF | gofmt > version.go
