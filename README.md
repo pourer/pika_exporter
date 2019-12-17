@@ -11,7 +11,7 @@ Pika-Expoter is based on [Redis-Exporter](https://github.com/oliver006/redis_exp
 To start using `pika_expoter`, install `Go` and run go get
 ```
 $ go get github.com/pourer/pika_expoter
-$ cd $GOPATH/src/github.com/pourer/pika_expoter
+$ cd $GOPATH/src/github.com/pourer/pika_exporter
 $ make
 $ ./bin/pika_exporter <flags>
 ```
