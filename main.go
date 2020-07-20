@@ -68,11 +68,6 @@ func main() {
 		log.SetFormatter(&log.TextFormatter{})
 	}
 
-	metrics, err := loadMetricConfig(*metricsFile)
-	if err != nil {
-		log.Fatalln("load metric config failed. err:", err)
-	}
-
 	var dis discovery.Discovery
 	if *hostFile != "" {
 		dis, err = discovery.NewFileDiscovery(*hostFile)
@@ -83,7 +78,7 @@ func main() {
 		log.Fatalln(" failed. err:", err)
 	}
 
-	e, err := exporter.NewPikaExporter(dis, *namespace, metrics, *checkKeyPatterns, *checkKeys, *checkScanCount, *keySpaceStatsClock)
+	e, err := exporter.NewPikaExporter(dis, *namespace, *checkKeyPatterns, *checkKeys, *checkScanCount, *keySpaceStatsClock)
 	if err != nil {
 		log.Fatalln("exporter init failed. err:", err)
 	}

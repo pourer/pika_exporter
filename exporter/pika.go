@@ -12,21 +12,16 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
-)
-
-const (
-	infoSectionFlag       = "#"
-	infoKeyValueSeparator = ":"
+	"github.com/pourer/pika_exporter/exporter/metrics"
 )
 
 type dbKeyPair struct {
 	db, key string
 }
 
-type pikaExproer struct {
+type exporter struct {
 	dis                 discovery.Discovery
 	namespace           string
-	metrics             Metrics
 	keyPatterns, keys   []dbKeyPair
 	scanCount           int
 	keyValues, keySizes *prometheus.GaugeVec
@@ -38,12 +33,11 @@ type pikaExproer struct {
 	done                chan struct{}
 }
 
-func NewPikaExporter(dis discovery.Discovery, namespace string, metrics Metrics,
-	keyPatterns, keys string, scanCount, statsClockHour int) (*pikaExproer, error) {
-	e := &pikaExproer{
+func NewPikaExporter(dis discovery.Discovery, namespace string,
+	keyPatterns, keys string, scanCount, statsClockHour int) (*exporter, error) {
+	e := &exporter{
 		dis:       dis,
 		namespace: namespace,
-		metrics:   metrics,
 		mutex:     new(sync.Mutex),
 		done:      make(chan struct{}),
 	}
@@ -63,13 +57,7 @@ func NewPikaExporter(dis discovery.Discovery, namespace string, metrics Metrics,
 	return e, nil
 }
 
-func (e *pikaExproer) initMetrics() {
-	for _, metric := range e.metrics {
-		metric.GaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: e.namespace,
-			Name:      metric.Name,
-		}, metric.Labels)
-	}
+func (e *exporter) initMetrics() {
 	e.keyValues = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: e.namespace,
 		Name:      "key_value",
@@ -92,15 +80,18 @@ func (e *pikaExproer) initMetrics() {
 	})
 }
 
-func (e *pikaExproer) Close() error {
+func (e *exporter) Close() error {
 	close(e.done)
 	e.wg.Wait()
 	return nil
 }
 
-func (e *pikaExproer) Describe(ch chan<- *prometheus.Desc) {
-	for _, metric := range e.metrics {
-		metric.Describe(ch)
+func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
+	describer := metrics.DescribeFunc(func(m metrics.MetaData) {
+		ch <- prometheus.NewDesc(prometheus.BuildFQName(e.namespace, "", m.Name), m.Help, m.Labels, nil)
+	})
+	for _, metric := range metrics.MetricConfigs {
+		metric.Desc(describer)
 	}
 
 	e.keyValues.Describe(ch)
@@ -111,7 +102,7 @@ func (e *pikaExproer) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.scrapeCount.Desc()
 }
 
-func (e *pikaExproer) Collect(ch chan<- prometheus.Metric) {
+func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
@@ -119,20 +110,17 @@ func (e *pikaExproer) Collect(ch chan<- prometheus.Metric) {
 	e.keySizes.Reset()
 	e.keyValues.Reset()
 
-	e.scrape()
+	e.scrape(ch)
 
 	e.keySizes.Collect(ch)
 	e.keyValues.Collect(ch)
-	for _, metric := range e.metrics {
-		metric.Collect(ch)
-	}
 
 	ch <- e.scrapeDuration
 	ch <- e.scrapeErrors
 	ch <- e.scrapeCount
 }
 
-func (e *pikaExproer) scrape() {
+func (e *exporter) scrape(ch chan<- prometheus.Metric) {
 	startTime := time.Now()
 	errCount := 0
 
@@ -145,12 +133,12 @@ func (e *pikaExproer) scrape() {
 			c, err := newClient(addr, password, alias)
 			if err != nil {
 				fut.Done(futureKey{addr: addr, alias: alias},
-					fmt.Errorf("new pika client failed. err:%s", err.Error()))
+					fmt.Errorf("exporter::scrape new pika client failed. err:%s", err.Error()))
 			} else {
 				defer c.Close()
 
 				fut.Add()
-				fut.Done(futureKey{addr: c.Addr(), alias: c.Alias()}, e.collectInfo(c))
+				fut.Done(futureKey{addr: c.Addr(), alias: c.Alias()}, e.collectInfo(c, ch))
 				fut.Done(futureKey{addr: c.Addr(), alias: c.Alias()}, e.collectKeys(c))
 			}
 		}(instance.Addr, instance.Password, instance.Alias)
@@ -159,7 +147,7 @@ func (e *pikaExproer) scrape() {
 	for k, v := range fut.Wait() {
 		if v != nil {
 			errCount++
-			log.Errorf("collect pika failed. pika server:%#v err:%s", k, v.Error())
+			log.Errorf("exporter::scrape collect pika failed. pika server:%#v err:%s", k, v.Error())
 		}
 	}
 
@@ -167,57 +155,43 @@ func (e *pikaExproer) scrape() {
 	e.scrapeDuration.Set(time.Now().Sub(startTime).Seconds())
 }
 
-func (e *pikaExproer) collectInfo(c *client) error {
+func (e *exporter) collectInfo(c *client, ch chan<- prometheus.Metric) error {
 	info, err := c.Info()
 	if err != nil {
 		return err
 	}
 
-	infoKeyValues, err := parseInfo(info)
+	version, extracts, err := parseInfo(info)
 	if err != nil {
 		return err
 	}
-	infoKeyValues["addr"] = c.Addr()
-	infoKeyValues["alias"] = c.Alias()
+	extracts[metrics.LabelNameAddr] = c.Addr()
+	extracts[metrics.LabelNameAlias] = c.Alias()
 
-	for _, metric := range e.metrics {
-		valid := true
-		labelValues := make([]string, len(metric.Labels))
-		for i, label := range metric.Labels {
-			if v, ok := infoKeyValues[label]; ok {
-				labelValues[i] = v
-			} else {
-				log.Debugf("no label value found. addr:%s metricName:%s label:%s", c.Addr(), metric.Name, label)
-				valid = false
-				break
-			}
+	collector := metrics.CollectFunc(func(m metrics.Metric) error {
+		promMetric, err := prometheus.NewConstMetric(
+			prometheus.NewDesc(prometheus.BuildFQName(e.namespace, "", m.Name), m.Help, m.Labels, nil),
+			m.MetricsType(), m.Value, m.LabelValues...)
+		if err != nil {
+			return err
 		}
 
-		var value float64
-		if valid && metric.ValueName != "" {
-			if v, ok := infoKeyValues[metric.ValueName]; ok {
-				if vv, err := convertValue(v); err != nil {
-					log.Warnf("convert value to float64 failed. addr:%s metricName:%s valueName:%s value:%s",
-						c.Addr(), metric.Name, metric.ValueName, v)
-				} else {
-					value = vv
-				}
-			} else {
-				log.Debugf("no value found. addr:%s metricName:%s valueName:%s",
-					c.Addr(), metric.Name, metric.ValueName)
-				valid = false
-			}
-		}
-
-		if valid {
-			metric.WithLabelValues(labelValues...).Set(value)
-		}
+		ch <- promMetric
+		return nil
+	})
+	parseOpt := metrics.ParseOption{
+		Version:  version,
+		Extracts: extracts,
+		Info:     info,
+	}
+	for _, metricConfig := range metrics.MetricConfigs {
+		metricConfig.Parse(collector, parseOpt)
 	}
 
 	return nil
 }
 
-func (e *pikaExproer) collectKeys(c *client) error {
+func (e *exporter) collectKeys(c *client) error {
 	allKeys := append([]dbKeyPair{}, e.keys...)
 	keys, err := getKeysFromPatterns(c, e.keyPatterns, e.scanCount)
 	if err != nil {
@@ -229,7 +203,7 @@ func (e *pikaExproer) collectKeys(c *client) error {
 	log.Debugf("collectKeys allKeys:%#v", allKeys)
 	for _, k := range allKeys {
 		if err := c.Select(k.db); err != nil {
-			log.Warnf("couldn't select database %#v when getting key info. addr:", k.db, c.Addr())
+			log.Warnf("couldn't select database %s when getting key info. addr:%s", k.db, c.Addr())
 			continue
 		}
 
@@ -270,7 +244,7 @@ func getKeysFromPatterns(c *client, keyPatterns []dbKeyPair, scanCount int) ([]d
 	return expandedKeys, nil
 }
 
-func (e *pikaExproer) statsKeySpace(hour int) {
+func (e *exporter) statsKeySpace(hour int) {
 	defer e.wg.Done()
 
 	if hour < 0 {
@@ -298,6 +272,7 @@ func (e *pikaExproer) statsKeySpace(hour int) {
 			if _, err := c.InfoKeySpaceOne(); err != nil {
 				log.Warnln("stats KeySpace execute INFO KEYSPACE 1 failed. err:", err)
 			}
+			c.Close()
 		}
 	}
 }
@@ -332,61 +307,6 @@ func parseKeyArg(keysArgString string) ([]dbKeyPair, error) {
 		keys = append(keys, dbKeyPair{db, key})
 	}
 	return keys, err
-}
-
-func parseInfo(info string) (map[string]string, error) {
-	keyValues := make(map[string]string)
-	lines := strings.Split(info, "\r\n")
-
-	for _, line := range lines {
-		line = strings.ToLower(line)
-		cleanLine := cleanString(line)
-		if cleanLine == "" {
-			continue
-		}
-		if isSection(line) {
-			continue
-		}
-
-		k, v := fetchKV(cleanLine)
-		if checkSplit(k, v, keyValues) {
-			continue
-		}
-		if v == "" {
-			v = "null"
-		}
-		keyValues[k] = v
-	}
-
-	return keyValues, nil
-}
-
-func isSection(s string) bool {
-	return s != "" &&
-		strings.Index(s, infoSectionFlag) == 0 &&
-		!strings.Contains(s, infoKeyValueSeparator)
-}
-
-func fetchKV(s string) (string, string) {
-	pos := strings.Index(s, infoKeyValueSeparator)
-	if pos < 0 {
-		return s, ""
-	}
-	k := strings.Replace(s[:pos], " ", "_", -1)
-	k = strings.Replace(k, "-", "_", -1)
-	v := s[pos+1:]
-	if strings.Index(v, " ") == 0 {
-		v = strings.Replace(v, " ", "", 1)
-	}
-	return k, v
-}
-
-func cleanString(s string) string {
-	s = strings.Replace(s, infoSectionFlag, "", 1)
-	if strings.Index(s, " ") == 0 {
-		s = strings.Replace(s, " ", "", 1)
-	}
-	return s
 }
 
 func getClockDuration(hour int) time.Duration {
