@@ -1,16 +1,16 @@
 # Pika Metric Exporter #
 
-Prometheus expoter for nosql [Qihoo360/pika](https://github.com/Qihoo360/pika) metrics. Suppots Pika 2.x
+Prometheus exporter for nosql [Qihoo360/pika](https://github.com/Qihoo360/pika) metrics. Suppots Pika 2.x
 
-Pika-Expoter is based on [Redis-Exporter](https://github.com/oliver006/redis_exporter)).
+Pika-Exporter is based on [Redis-Exporter](https://github.com/oliver006/redis_exporter)
 
 ## Buiding ##
 
 **Build and run locally:**
 
-To start using `pika_expoter`, install `Go` and run go get
+To start using `pika_exporter`, install `Go` and run go get
 ```
-$ go get github.com/pourer/pika_expoter
+$ go get github.com/pourer/pika_exporter
 $ cd $GOPATH/src/github.com/pourer/pika_exporter
 $ make
 $ ./bin/pika_exporter <flags>
@@ -48,7 +48,7 @@ keyspace-stats-clock | PIKA_EXPORTER_KEYSPACE_STATS_CLOCK | -1 | Stats the numbe
 check.key-patterns | PIKA_EXPORTER_CHECK_KEY_PARTTERNS | | Comma separated list of key-patterns to export value and length/size, searched for with SCAN. | --check.key-patterns db0=test*,db0=*abc*
 check.keys | PIKA_EXPORTER_CHECK_KEYS | | Comma separated list of keys to export value and length/size. | --check.keys abc,test,wasd
 check.scan-count | PIKA_EXPORTER_CHECK_SCAN_COUNT | 100 | When check keys and executing SCAN command, scan-count assigned to COUNT. | --check.scan-count 200
-web.listen-address | PIKA_EXPOTER_WEB_LISTEN_ADDRESS | :9121 | Address to listen on for web interface and telemetry. | --web.listen-address ":9121"
+web.listen-address | PIKA_EXPORTER_WEB_LISTEN_ADDRESS | :9121 | Address to listen on for web interface and telemetry. | --web.listen-address ":9121"
 web.telemetry-path | PIKA_EXPORTER_WEB_TELEMETRY_PATH | /metrics | Path under which to expose metrics. | --web.telemetry-path "/metrics"
 log.level | PIKA_EXPORTER_LOG_LEVEL | info | Log level, valid options: `panic` `fatal` `error` `warn` `warning` `info` `debug`. | --log.level "debug"
 log.format | PIKA_EXPORTER_LOG_FORMAT | json | Log format, valid options: `txt` `json`. | --log.format "json"
