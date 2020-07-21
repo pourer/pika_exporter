@@ -1,6 +1,6 @@
 # Pika Metric Exporter #
 
-Prometheus exporter for nosql [Qihoo360/pika](https://github.com/Qihoo360/pika) metrics. Suppots Pika 2.x, 3.x
+Prometheus exporter for nosql [Qihoo360/pika](https://github.com/Qihoo360/pika) metrics. Supported Pika 2.x, 3.x
 
 Pika-Exporter is based on [Redis-Exporter](https://github.com/oliver006/redis_exporter)
 
