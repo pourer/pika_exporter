@@ -104,7 +104,7 @@ namespace_connected_slaves | >= 2.0.0 | Gauge | {addr="", alias=""} | the value 
 namespace_slave_state | >= 2.0.0 | Gauge | {addr="", alias="","slave_sid"="", "slave_ip"="", "slave_port"=""} | parse master `slave info's state` | pika serve instance slave's state
 namespace_slave_lag | >= 2.0.0 | Gauge | {addr="", alias="","slave_sid"="", "slave_ip"="", "slave_port"=""} | parse master `slave info's lag` | pika serve instance slave's binlog lag
 namespace_master_link_status | >= 2.0.0 | Gauge | {addr="", alias="","master_host"="", "master_port"=""} | 0 or 1 | connection state between slave and master, when pika serve instance's role is slave
-namespace_repl_state | >= 2.0.0 | Gauge | {addr="", alias="","master_host"="", "master_port"=""} | 0 or 1 | sync connection state between slave and master, when pika serve instance's role is slave
+namespace_repl_state | >= 2.0.0 | Gauge | {addr="", alias="","master_host"="", "master_port"=""} | the value of `repl_state` | sync connection state between slave and master, when pika serve instance's role is slave
 namespace_slave_read_only | >= 2.0.0 | Gauge | {addr="", alias="","master_host"="", "master_port"=""} | 0 or 1 | is slave read only, when pika serve instance's role is slave
 namespace_slave_priority | >= 3.0.0 | Gauge | {addr="", alias="","master_host"="", "master_port"=""} | the value of `slave_priority` | slave priority, when pika serve instance's role is slave
 namespace_double_master_info | >= 2.0.0 | Gauge | {addr="", alias="","the_peer_master_server_id"="", "the_peer_master_host"="", "the_peer_master_port"=""} | 0 | the peer master info, when pika serve instance's role is master and double_master_mode is true
