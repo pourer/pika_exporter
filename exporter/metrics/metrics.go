@@ -89,6 +89,7 @@ type Metric struct {
 
 type MetricConfig struct {
 	Parser
+	MetricMeta
 }
 
 var MetricConfigs = make(map[string]MetricConfig)

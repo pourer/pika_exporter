@@ -184,8 +184,8 @@ func (e *exporter) collectInfo(c *client, ch chan<- prometheus.Metric) error {
 		Extracts: extracts,
 		Info:     info,
 	}
-	for _, metricConfig := range metrics.MetricConfigs {
-		metricConfig.Parse(collector, parseOpt)
+	for _, m := range metrics.MetricConfigs {
+		m.Parse(m, collector, parseOpt)
 	}
 
 	return nil

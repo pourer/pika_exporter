@@ -20,21 +20,14 @@ type ParseOption struct {
 }
 
 type Parser interface {
-	Desc(d Describer)
-	Parse(c Collector, opt ParseOption)
+	Parse(m MetricMeta, c Collector, opt ParseOption)
 }
 
 type Parsers []Parser
 
-func (ps Parsers) Parse(c Collector, opt ParseOption) {
+func (ps Parsers) Parse(m MetricMeta, c Collector, opt ParseOption) {
 	for _, p := range ps {
-		p.Parse(c, opt)
-	}
-}
-
-func (ps Parsers) Desc(d Describer) {
-	for _, p := range ps {
-		p.Desc(d)
+		p.Parse(m, c, opt)
 	}
 }
 
@@ -43,11 +36,11 @@ type versionMatchParser struct {
 	Parser
 }
 
-func (p *versionMatchParser) Parse(c Collector, opt ParseOption) {
+func (p *versionMatchParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
 	if opt.Version == nil || !p.verC.Check(opt.Version) {
 		return
 	}
-	p.Parser.Parse(c, opt)
+	p.Parser.Parse(m, c, opt)
 }
 
 type keyMatchParser struct {
@@ -55,21 +48,19 @@ type keyMatchParser struct {
 	Parser
 }
 
-func (p *keyMatchParser) Parse(c Collector, opt ParseOption) {
+func (p *keyMatchParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
 	for key, matchValue := range p.matches {
 		if v, _ := opt.Extracts[key]; strings.ToLower(v) != strings.ToLower(matchValue) {
 			return
 		}
 	}
-	p.Parser.Parse(c, opt)
+	p.Parser.Parse(m, c, opt)
 }
 
-type normalParser struct {
-	MetricMeta
-}
+type normalParser struct{}
 
-func (p *normalParser) Parse(c Collector, opt ParseOption) {
-	p.Lookup(func(m MetaData) {
+func (p *normalParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
+	m.Lookup(func(m MetaData) {
 		metric := Metric{
 			MetaData:    m,
 			LabelValues: make([]string, len(m.Labels)),
@@ -79,9 +70,8 @@ func (p *normalParser) Parse(c Collector, opt ParseOption) {
 		for i, labelName := range m.Labels {
 			labelValue, ok := findInMap(labelName, opt.Extracts)
 			if !ok {
-				log.Warnf("normalParser::Parse not found label value. metricName:%s labelName:%s",
+				log.Debugf("normalParser::Parse not found label value. metricName:%s labelName:%s",
 					m.Name, labelName)
-				return
 			}
 
 			metric.LabelValues[i] = labelValue
@@ -104,14 +94,14 @@ func (p *normalParser) Parse(c Collector, opt ParseOption) {
 }
 
 type regexParser struct {
-	reg *regexp.Regexp
-	MetricMeta
+	name string
+	reg  *regexp.Regexp
 }
 
-func (p *regexParser) Parse(c Collector, opt ParseOption) {
+func (p *regexParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
 	matchMaps := p.regMatchesToMap(opt.Info)
 
-	p.Lookup(func(m MetaData) {
+	m.Lookup(func(m MetaData) {
 		for _, matches := range matchMaps {
 			metric := Metric{
 				MetaData:    m,
@@ -122,9 +112,8 @@ func (p *regexParser) Parse(c Collector, opt ParseOption) {
 			for i, labelName := range m.Labels {
 				labelValue, ok := findInMap(labelName, matches, opt.Extracts)
 				if !ok {
-					log.Warnf("regexParser::Parse not found label value. metricName:%s labelName:%s",
+					log.Debugf("regexParser::Parse not found label value. metricName:%s labelName:%s",
 						m.Name, labelName)
-					return
 				}
 
 				metric.LabelValues[i] = labelValue
@@ -155,7 +144,7 @@ func (p *regexParser) regMatchesToMap(s string) []map[string]string {
 
 	multiMatches := p.reg.FindAllStringSubmatch(s, -1)
 	if len(multiMatches) == 0 {
-		log.Errorf("regexParser::Parse reg find sub match nil. line:%s", s)
+		log.Errorf("regexParser::Parse reg find sub match nil. name:%s text:%s", p.name, s)
 		return nil
 	}
 

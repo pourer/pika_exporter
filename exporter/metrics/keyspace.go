@@ -12,77 +12,87 @@ var collectKeySpaceMetrics = map[string]MetricConfig{
 			&versionMatchParser{
 				verC: mustNewVersionConstraint(`<3.0.5`),
 				Parser: &regexParser{
-					reg: regexp.MustCompile(`(?P<type>[^\s]*)\s*keys:(?P<keys>[\d]+)`),
-					MetricMeta: &MetaData{
-						Name:      "keys",
-						Help:      "pika serve instance total count of the key-type keys",
-						Type:      metricTypeGauge,
-						Labels:    []string{LabelNameAddr, LabelNameAlias, "type"},
-						ValueName: "keys",
-					},
+					name: "keyspace_info_<3.0.5",
+					reg:  regexp.MustCompile(`(?P<type>[^\s]*)\s*keys:(?P<keys>[\d]+)`),
 				},
 			},
-
 			&versionMatchParser{
 				verC: mustNewVersionConstraint(`~3.0.5`),
 				Parser: &regexParser{
+					name: "keyspace_info_~3.0.5",
 					reg: regexp.MustCompile(`(?P<type>\w*):\s*keys=(?P<keys>[\d]+)[,\s]*` +
 						`expires=(?P<expire_keys>[\d]+)[,\s]*invaild_keys=(?P<invalid_keys>[\d]+)`),
-					MetricMeta: MetaDatas{
-						{
-							Name:      "keys",
-							Help:      "pika serve instance total count of the key-type keys",
-							Type:      metricTypeGauge,
-							Labels:    []string{LabelNameAddr, LabelNameAlias, "type"},
-							ValueName: "keys",
-						},
-						{
-							Name:      "expire_keys",
-							Help:      "pika serve instance total count of the key-type expire keys",
-							Type:      metricTypeGauge,
-							Labels:    []string{LabelNameAddr, LabelNameAlias, "type"},
-							ValueName: "expire_keys",
-						},
-						{
-							Name:      "invalid_keys",
-							Help:      "pika serve instance total count of the key-type invalid keys",
-							Type:      metricTypeGauge,
-							Labels:    []string{LabelNameAddr, LabelNameAlias, "type"},
-							ValueName: "invalid_keys",
-						},
-					},
 				},
 			},
-
 			&versionMatchParser{
-				verC: mustNewVersionConstraint(`>=3.1.0`),
+				verC: mustNewVersionConstraint(`3.1.0 - 3.3.2`),
 				Parser: &regexParser{
+					name: "keyspace_info_>=3.1.0",
 					reg: regexp.MustCompile(`(?P<db>db[\d]+)\s*(?P<type>[^_]+)\w*keys=(?P<keys>[\d]+)[,\s]*` +
 						`expires=(?P<expire_keys>[\d]+)[,\s]*invaild_keys=(?P<invalid_keys>[\d]+)`),
-					MetricMeta: MetaDatas{
-						{
-							Name:      "keys",
-							Help:      "pika serve instance total count of the db's key-type keys",
-							Type:      metricTypeGauge,
-							Labels:    []string{LabelNameAddr, LabelNameAlias, "db", "type"},
-							ValueName: "keys",
-						},
-						{
-							Name:      "expire_keys",
-							Help:      "pika serve instance total count of the db's key-type expire keys",
-							Type:      metricTypeGauge,
-							Labels:    []string{LabelNameAddr, LabelNameAlias, "db", "type"},
-							ValueName: "expire_keys",
-						},
-						{
-							Name:      "invalid_keys",
-							Help:      "pika serve instance total count of the db's key-type invalid keys",
-							Type:      metricTypeGauge,
-							Labels:    []string{LabelNameAddr, LabelNameAlias, "db", "type"},
-							ValueName: "invalid_keys",
-						},
-					},
 				},
+			},
+			&versionMatchParser{
+				verC: mustNewVersionConstraint(`>=3.3.3`),
+				Parser: &regexParser{
+					name: "keyspace_info_>=3.1.0",
+					reg: regexp.MustCompile(`(?P<db>db[\d]+)\s*(?P<type>[^_]+)\w*keys=(?P<keys>[\d]+)[,\s]*` +
+						`expires=(?P<expire_keys>[\d]+)[,\s]*invalid_keys=(?P<invalid_keys>[\d]+)`),
+				},
+			},
+		},
+		MetricMeta: MetaDatas{
+			{
+				Name:      "keys",
+				Help:      "pika serve instance total count of the db's key-type keys",
+				Type:      metricTypeGauge,
+				Labels:    []string{LabelNameAddr, LabelNameAlias, "db", "type"},
+				ValueName: "keys",
+			},
+		},
+	},
+
+	"keyspace_info_all": {
+		Parser: Parsers{
+			&versionMatchParser{
+				verC: mustNewVersionConstraint(`~3.0.5`),
+				Parser: &regexParser{
+					name: "keyspace_info_~3.0.5",
+					reg: regexp.MustCompile(`(?P<type>\w*):\s*keys=(?P<keys>[\d]+)[,\s]*` +
+						`expires=(?P<expire_keys>[\d]+)[,\s]*invaild_keys=(?P<invalid_keys>[\d]+)`),
+				},
+			},
+			&versionMatchParser{
+				verC: mustNewVersionConstraint(`3.1.0 - 3.3.2`),
+				Parser: &regexParser{
+					name: "keyspace_info_>=3.1.0",
+					reg: regexp.MustCompile(`(?P<db>db[\d]+)\s*(?P<type>[^_]+)\w*keys=(?P<keys>[\d]+)[,\s]*` +
+						`expires=(?P<expire_keys>[\d]+)[,\s]*invaild_keys=(?P<invalid_keys>[\d]+)`),
+				},
+			},
+			&versionMatchParser{
+				verC: mustNewVersionConstraint(`>=3.3.3`),
+				Parser: &regexParser{
+					name: "keyspace_info_>=3.1.0",
+					reg: regexp.MustCompile(`(?P<db>db[\d]+)\s*(?P<type>[^_]+)\w*keys=(?P<keys>[\d]+)[,\s]*` +
+						`expires=(?P<expire_keys>[\d]+)[,\s]*invalid_keys=(?P<invalid_keys>[\d]+)`),
+				},
+			},
+		},
+		MetricMeta: MetaDatas{
+			{
+				Name:      "expire_keys",
+				Help:      "pika serve instance total count of the db's key-type expire keys",
+				Type:      metricTypeGauge,
+				Labels:    []string{LabelNameAddr, LabelNameAlias, "db", "type"},
+				ValueName: "expire_keys",
+			},
+			{
+				Name:      "invalid_keys",
+				Help:      "pika serve instance total count of the db's key-type invalid keys",
+				Type:      metricTypeGauge,
+				Labels:    []string{LabelNameAddr, LabelNameAlias, "db", "type"},
+				ValueName: "invalid_keys",
 			},
 		},
 	},

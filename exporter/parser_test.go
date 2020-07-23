@@ -36,8 +36,8 @@ func Test_Parse_Info(t *testing.T) {
 			Info:     infoCase.Info,
 		}
 		t.Logf("##########%s begin parse###########", infoCase.Name)
-		for _, metricConfig := range metrics.MetricConfigs {
-			metricConfig.Parse(collector, parseOpt)
+		for _, m := range metrics.MetricConfigs {
+			m.Parse(m, collector, parseOpt)
 		}
 	}
 }
@@ -93,7 +93,7 @@ pika_version:3.0.10
 		}
 
 		for k, v := range testCase.checkKeys {
-			if vv, ok := extracts[k]; ok && vv == v{
+			if vv, ok := extracts[k]; ok && vv == v {
 				t.Errorf("not found key:%s", k)
 			}
 		}
@@ -110,8 +110,8 @@ pika_version:3.0.10
 			Extracts: extracts,
 			Info:     testCase.info,
 		}
-		for _, metricConfig := range metrics.MetricConfigs {
-			metricConfig.Parse(collector, parseOpt)
+		for _, m := range metrics.MetricConfigs {
+			m.Parse(m, collector, parseOpt)
 		}
 	}
 }
@@ -137,8 +137,8 @@ func Benchmark_Parse(b *testing.B) {
 				Extracts: extracts,
 				Info:     info,
 			}
-			for _, metricConfig := range metrics.MetricConfigs {
-				metricConfig.Parse(collector, parseOpt)
+			for _, m := range metrics.MetricConfigs {
+				m.Parse(m, collector, parseOpt)
 			}
 		}
 	})

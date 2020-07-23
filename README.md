@@ -114,14 +114,11 @@ namespace_double_master_recv_info_binlog_offset | >= 2.0.0 | Gauge | {addr="", a
 namespace_log_size | >= 2.0.0 | Gauge | {addr="", alias=""} | the value of `log_size` | pika serve instance total binlog size in bytes
 namespace_binlog_offset_filenum | < 3.1.0 | Gauge | {addr="", alias=""} | the value of `binlog_offset filenum` | pika serve instance binlog file num
 namespace_binlog_offset | < 3.1.0 | Gauge | {addr="", alias="", "safety_purge"="", "expire_logs_days"="", "expire_logs_nums"=""} | the value of `binlog_offset offset` | pika serve instance binlog offset
-namespace_binlog_offset_filenum | >= 3.1.0 | Gauge | {addr="", alias="", "db"=""} | the value of `binlog_offset offset` | pika serve instance binlog file num for each db
-namespace_binlog_offset | >= 3.1.0 | Gauge | {addr="", alias="", "db"="", "safety_purge"=""} | the value of `binlog_offset offset` | pika serve instance binlog offset for each db
-namespace_keys | < 3.1.0 | Gauge | {addr="", alias="", "type"=""} | the value of `keys` | pika serve instance total count of the key-type keys
-namespace_expire_keys | >= 3.0.5 and < 3.1.0 | Gauge | {addr="", alias="", "type"=""} | the value of `expire_keys` | pika serve instance total count of the key-type expire keys
-namespace_invalid_keys | >= 3.0.5 and < 3.1.0 | Gauge | {addr="", alias="", "type"=""} | the value of `invalid_keys` | pika serve instance total count of the key-type invalid keys
-namespace_keys | >= 3.1.0 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `keys` | pika serve instance total count of the db's key-type keys
-namespace_expire_keys | >= 3.1.0 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `expire_keys` | pika serve instance total count of the db's key-type expire keys
-namespace_invalid_keys | >= 3.1.0 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `invalid_keys` | pika serve instance total count of the db's key-type invalid keys
+namespace_binlog_offset_filenum_db | >= 3.1.0 | Gauge | {addr="", alias="", "db"=""} | the value of `binlog_offset offset` each db | pika serve instance binlog file num for each db
+namespace_binlog_offset_db | >= 3.1.0 | Gauge | {addr="", alias="", "db"="", "safety_purge"=""} | the value of `binlog_offset offset` each db | pika serve instance binlog offset for each db
+namespace_keys | >= 2.0.0 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `keys` | pika serve instance total count of the db's key-type keys, the db value is meaningful when the pika version >= 3.1.0
+namespace_expire_keys | >= 3.0.5 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `expire_keys` | pika serve instance total count of the db's key-type expire keys, the db value is meaningful when the pika version >= 3.1.0
+namespace_invalid_keys | >= 3.0.5 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `invalid_keys` | pika serve instance total count of the db's key-type invalid keys, the db value is meaningful when the pika version >= 3.1.0
 
 
 ## Keys Metrics Definition ##
