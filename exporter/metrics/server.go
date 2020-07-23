@@ -1,21 +1,12 @@
 package metrics
 
-import "regexp"
-
 func init() {
 	Register(collectServerMetrics)
 }
 
 var collectServerMetrics = map[string]MetricConfig{
 	"build_info": {
-		Parser: &regexParser{
-			name: "build_info",
-			reg: regexp.MustCompile(`pika_version:(?P<pika_version>[^\n]*)[\s\S]*` +
-				`pika_git_sha:(?P<pika_git_sha>[^\n]*)[\s\S]*` +
-				`pika_build_compile_date:(?P<pika_build_compile_date>[^\n]*)[\s\S]*` +
-				`os:(?P<os>[^\n]*)[\s\S]*` +
-				`arch_bits:(?P<arch_bits>[^\n]*)`),
-		},
+		Parser: &normalParser{},
 		MetricMeta: &MetaData{
 			Name:   "build_info",
 			Help:   "pika binary file build info",
@@ -24,14 +15,7 @@ var collectServerMetrics = map[string]MetricConfig{
 		},
 	},
 	"server_info": {
-		Parser: &regexParser{
-			name: "server_info",
-			reg: regexp.MustCompile(`process_id:(?P<process_id>[^\n]*)[\s\S]*` +
-				`tcp_port:(?P<tcp_port>[^\n]*)[\s\S]*` +
-				`config_file:(?P<config_file>[^\n]*)[\s\S]*` +
-				`server_id:(?P<server_id>[^\n]*)[\s\S]*` +
-				`role:(?P<role>[^\n]*)`),
-		},
+		Parser: &normalParser{},
 		MetricMeta: &MetaData{
 			Name:   "server_info",
 			Help:   "pika serve instance info",

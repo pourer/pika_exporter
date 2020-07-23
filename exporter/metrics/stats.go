@@ -40,7 +40,7 @@ var collectStatsMetrics = map[string]MetricConfig{
 	"is_bgsaving": {
 		Parser: &regexParser{
 			name: "is_bgsaving",
-			reg:  regexp.MustCompile(`is_bgsaving:(?P<is_bgsaving>(No|Yes)),?(?P<bgsave_name>[^,\n]*)`),
+			reg:  regexp.MustCompile(`is_bgsaving:(?P<is_bgsaving>(No|Yes)),?(?P<bgsave_name>[^,\r\n]*)`),
 		},
 		MetricMeta: &MetaData{
 			Name:      "is_bgsaving",
@@ -53,7 +53,7 @@ var collectStatsMetrics = map[string]MetricConfig{
 	"is_scaning_keyspace": {
 		Parser: &regexParser{
 			name: "is_scaning_keyspace",
-			reg:  regexp.MustCompile(`is_scaning_keyspace:(?P<is_scaning_keyspace>(No|Yes))[\s\S]*#\s*Time:(?P<keyspace_time>[^\n]*)`),
+			reg:  regexp.MustCompile(`is_scaning_keyspace:(?P<is_scaning_keyspace>(No|Yes))[\s\S]*#\s*Time:(?P<keyspace_time>[^\r\n]*)`),
 		},
 		MetricMeta: &MetaData{
 			Name:      "is_scaning_keyspace",
@@ -66,7 +66,7 @@ var collectStatsMetrics = map[string]MetricConfig{
 	"is_compact": {
 		Parser: &regexParser{
 			name: "is_compact",
-			reg:  regexp.MustCompile(`is_compact:(?P<is_compact>(No|Yes))[\s\S]*compact_cron:(?P<compact_cron>[^\n]*)[\s\S]*compact_interval:(?P<compact_interval>[^\n]*)`),
+			reg:  regexp.MustCompile(`is_compact:(?P<is_compact>(No|Yes))[\s\S]*compact_cron:(?P<compact_cron>[^\r\n]*)[\s\S]*compact_interval:(?P<compact_interval>[^\r\n]*)`),
 		},
 		MetricMeta: &MetaData{
 			Name:      "is_compact",

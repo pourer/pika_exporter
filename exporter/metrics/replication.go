@@ -9,8 +9,8 @@ func init() {
 var collectReplicationMetrics = map[string]MetricConfig{
 	"master_connected_slaves": {
 		Parser: &keyMatchParser{
-			matches: map[string]string{
-				"role": "master",
+			matchers: map[string]Matcher{
+				"role": &equalMatcher{v: "master"},
 			},
 			Parser: Parsers{
 				&normalParser{},
@@ -27,8 +27,9 @@ var collectReplicationMetrics = map[string]MetricConfig{
 
 	"master_slave_info": {
 		Parser: &keyMatchParser{
-			matches: map[string]string{
-				"role": "master",
+			matchers: map[string]Matcher{
+				"role":             &equalMatcher{v: "master"},
+				"connected_slaves": &intMatcher{condition: ">", v: 0},
 			},
 			Parser: Parsers{
 				&regexParser{
@@ -58,8 +59,8 @@ var collectReplicationMetrics = map[string]MetricConfig{
 
 	"slave_info": {
 		Parser: &keyMatchParser{
-			matches: map[string]string{
-				"role": "slave",
+			matchers: map[string]Matcher{
+				"role": &equalMatcher{v: "slave"},
 			},
 			Parser: Parsers{
 				&normalParser{},
@@ -94,8 +95,8 @@ var collectReplicationMetrics = map[string]MetricConfig{
 
 	"slave_info>=3.0.0": {
 		Parser: &keyMatchParser{
-			matches: map[string]string{
-				"role": "slave",
+			matchers: map[string]Matcher{
+				"role": &equalMatcher{v: "slave"},
 			},
 			Parser: &versionMatchParser{
 				verC:   mustNewVersionConstraint(`>=3.0.0`),
@@ -113,18 +114,18 @@ var collectReplicationMetrics = map[string]MetricConfig{
 
 	"double_master_info": {
 		Parser: &keyMatchParser{
-			matches: map[string]string{
-				"role":               "master",
-				"double_master_mode": "true",
+			matchers: map[string]Matcher{
+				"role":               &equalMatcher{v: "master"},
+				"double_master_mode": &equalMatcher{v: "true"},
 			},
 			Parser: &regexParser{
 				name: "double_master_info",
-				reg: regexp.MustCompile(`the peer-master host:(?P<the_peer_master_host>[^\n]*)[\s\S]*` +
-					`the peer-master port:(?P<the_peer_master_port>[^\n]*)[\s\S]*` +
-					`the peer-master server_id:(?P<the_peer_master_server_id>[^\n]*)[\s\S]*` +
-					`repl_state:(?P<double_master_repl_state>[^\n]*)[\s\S]*` +
+				reg: regexp.MustCompile(`the peer-master host:(?P<the_peer_master_host>[^\r\n]*)[\s\S]*` +
+					`the peer-master port:(?P<the_peer_master_port>[^\r\n]*)[\s\S]*` +
+					`the peer-master server_id:(?P<the_peer_master_server_id>[^\r\n]*)[\s\S]*` +
+					`repl_state:(?P<double_master_repl_state>[^\r\n]*)[\s\S]*` +
 					`double_master_recv_info:\s*filenum\s*(?P<double_master_recv_info_binlog_filenum>[^\s]*)` +
-					`\s*offset\s*(?P<double_master_recv_info_binlog_offset>[^\n]*)`),
+					`\s*offset\s*(?P<double_master_recv_info_binlog_offset>[^\r\n]*)`),
 			},
 		},
 		MetricMeta: MetaDatas{

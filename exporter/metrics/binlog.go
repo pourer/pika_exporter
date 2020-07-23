@@ -49,7 +49,7 @@ var collectBinlogMetrics = map[string]MetricConfig{
 			verC: mustNewVersionConstraint(`>=3.1.0`),
 			Parser: &regexParser{
 				name: "binlog_>=3.1.0",
-				reg:  regexp.MustCompile(`(?P<db>db[\d]+)\s*binlog_offset=(?P<binlog_offset_filenum>[^\s]*)\s*(?P<binlog_offset>[\d]*),*safety_purge=(?P<safety_purge>[^\s\n]*)`),
+				reg:  regexp.MustCompile(`(?P<db>db[\d]+)\s*binlog_offset=(?P<binlog_offset_filenum>[^\s]*)\s*(?P<binlog_offset>[\d]*),*safety_purge=(?P<safety_purge>[^\s\r\n]*)`),
 			},
 		},
 		MetricMeta: MetaDatas{

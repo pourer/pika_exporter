@@ -43,14 +43,50 @@ func (p *versionMatchParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
 	p.Parser.Parse(m, c, opt)
 }
 
+type Matcher interface {
+	Match(v string) bool
+}
+
+type equalMatcher struct {
+	v string
+}
+
+func (m *equalMatcher) Match(v string) bool {
+	return strings.ToLower(v) == strings.ToLower(m.v)
+}
+
+type intMatcher struct {
+	condition string
+	v         int
+}
+
+func (m *intMatcher) Match(v string) bool {
+	nv, err := strconv.Atoi(v)
+	if err != nil {
+		return false
+	}
+
+	switch m.condition {
+	case ">":
+		return nv > m.v
+	case "<":
+		return nv < m.v
+	case ">=":
+		return nv >= m.v
+	case "<=":
+		return nv <= m.v
+	}
+	return false
+}
+
 type keyMatchParser struct {
-	matches map[string]string
+	matchers map[string]Matcher
 	Parser
 }
 
 func (p *keyMatchParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
-	for key, matchValue := range p.matches {
-		if v, _ := opt.Extracts[key]; strings.ToLower(v) != strings.ToLower(matchValue) {
+	for key, matcher := range p.matchers {
+		if v, _ := opt.Extracts[key]; !matcher.Match(v) {
 			return
 		}
 	}
