@@ -55,6 +55,7 @@ used_cpu_user_children:0.00
 role:master
 connected_slaves:1
 slave0:ip=192.168.1.3,port=9860,state=online,sid=1,lag=0
+slave1:ip=192.168.1.4,port=9860,state=online,sid=2,lag=0
 
 # Keyspace
 # Time: 2020-07-06 14:45:31

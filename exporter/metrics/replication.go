@@ -32,10 +32,14 @@ var collectReplicationMetrics = map[string]MetricConfig{
 				"connected_slaves": &intMatcher{condition: ">", v: 0},
 			},
 			Parser: Parsers{
-				&regexParser{
-					name: "master_slave_info",
-					reg: regexp.MustCompile(`slave\d+:ip=(?P<slave_ip>[\d.]+),port=(?P<slave_port>[\d.]+),` +
-						`state=(?P<slave_state>[a-z]+),sid=(?P<slave_sid>[\d]+),lag=(?P<slave_lag>[\d]+)`),
+				&versionMatchParser{
+					verC: mustNewVersionConstraint(`<3.1.0`),
+					Parser: &regexParser{
+						name: "master_slave_info_slave_state",
+						reg: regexp.MustCompile(`slave\d+:ip=(?P<slave_ip>[\d.]+),port=(?P<slave_port>[\d.]+),` +
+							`state=(?P<slave_state>[a-z]+),sid=(?P<slave_sid>[\d]+),lag=(?P<slave_lag>[\d]+)`),
+						Parser: &normalParser{},
+					},
 				},
 			},
 		},
@@ -44,14 +48,50 @@ var collectReplicationMetrics = map[string]MetricConfig{
 				Name:      "slave_state",
 				Help:      "pika serve instance slave's state",
 				Type:      metricTypeGauge,
-				Labels:    []string{LabelNameAddr, LabelNameAlias, "slave_sid", "slave_ip", "slave_port"},
+				Labels:    []string{LabelNameAddr, LabelNameAlias, "slave_sid", "slave_conn_fd", "slave_ip", "slave_port"},
 				ValueName: "slave_state",
 			},
+		},
+	},
+
+	"master_slave_info_slave_lag": {
+		Parser: &keyMatchParser{
+			matchers: map[string]Matcher{
+				"role":             &equalMatcher{v: "master"},
+				"connected_slaves": &intMatcher{condition: ">", v: 0},
+			},
+			Parser: Parsers{
+				&versionMatchParser{
+					verC: mustNewVersionConstraint(`<3.1.0`),
+					Parser: &regexParser{
+						name: "master_slave_info_slave_lag_<3.1.0",
+						reg: regexp.MustCompile(`slave\d+:ip=(?P<slave_ip>[\d.]+),port=(?P<slave_port>[\d.]+),` +
+							`state=(?P<slave_state>[a-z]+),sid=(?P<slave_sid>[\d]+),lag=(?P<slave_lag>[\d]+)`),
+						Parser: &normalParser{},
+					},
+				},
+				&versionMatchParser{
+					verC: mustNewVersionConstraint(`>=3.1.0`),
+					Parser: &regexParser{
+						name: "master_slave_info_slave_lag_>=3.1.0",
+						reg: regexp.MustCompile(`slave\d+:ip=(?P<slave_ip>[\d.]+),port=(?P<slave_port>[\d.]+),` +
+							`conn_fd=(?P<slave_conn_fd>[\d]+),lag=(?P<slave_lag>[^\r\n]*)`),
+						Parser: &regexParser{
+							name:   "master_slave_info_slave_lag_db_>=3.1.0",
+							source: "slave_lag",
+							reg:    regexp.MustCompile(`((?P<db>db[\d.]+):(?P<slave_lag>[\d]+))`),
+							Parser: &normalParser{},
+						},
+					},
+				},
+			},
+		},
+		MetricMeta: &MetaDatas{
 			{
 				Name:      "slave_lag",
 				Help:      "pika serve instance slave's binlog lag",
 				Type:      metricTypeGauge,
-				Labels:    []string{LabelNameAddr, LabelNameAlias, "slave_sid", "slave_ip", "slave_port"},
+				Labels:    []string{LabelNameAddr, LabelNameAlias, "slave_sid", "slave_conn_fd", "slave_ip", "slave_port", "db"},
 				ValueName: "slave_lag",
 			},
 		},
@@ -75,13 +115,26 @@ var collectReplicationMetrics = map[string]MetricConfig{
 				Labels:    []string{LabelNameAddr, LabelNameAlias, "master_host", "master_port"},
 				ValueName: "master_link_status",
 			},
+		},
+	},
+
+	"slave_info<3.2.0": {
+		Parser: &keyMatchParser{
+			matchers: map[string]Matcher{
+				"role": &equalMatcher{v: "slave"},
+			},
+			Parser: &versionMatchParser{
+				verC:   mustNewVersionConstraint(`<3.2.0`),
+				Parser: &normalParser{},
+			},
+		},
+		MetricMeta: MetaDatas{
 			{
 				Name: "repl_state",
 				Help: "sync connection state between slave and master, when pika serve instance's " +
 					"role is slave",
-				Type:      metricTypeGauge,
-				Labels:    []string{LabelNameAddr, LabelNameAlias, "master_host", "master_port"},
-				ValueName: "repl_state",
+				Type:   metricTypeGauge,
+				Labels: []string{LabelNameAddr, LabelNameAlias, "master_host", "master_port", "repl_state"},
 			},
 			{
 				Name:      "slave_read_only",
@@ -126,6 +179,7 @@ var collectReplicationMetrics = map[string]MetricConfig{
 					`repl_state:(?P<double_master_repl_state>[^\r\n]*)[\s\S]*` +
 					`double_master_recv_info:\s*filenum\s*(?P<double_master_recv_info_binlog_filenum>[^\s]*)` +
 					`\s*offset\s*(?P<double_master_recv_info_binlog_offset>[^\r\n]*)`),
+				Parser: &normalParser{},
 			},
 		},
 		MetricMeta: MetaDatas{

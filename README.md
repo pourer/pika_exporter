@@ -101,11 +101,11 @@ namespace_used_cpu_user | >= 2.0.0 | `Counter` | {addr="", alias=""} | the value
 namespace_used_cpu_sys_children | >= 2.0.0 | `Counter` | {addr="", alias=""} | the value of `used_cpu_sys_children` | pika serve instance children total count of used cpu user"
 namespace_used_cpu_user_children | >= 2.0.0 | `Counter` | {addr="", alias=""} | the value of `used_cpu_user_children` | pika serve instance children total count of used cpu user
 namespace_connected_slaves | >= 2.0.0 | Gauge | {addr="", alias=""} | the value of `connected_slaves` | the count of connected slaves, when pika serve instance's role is master
-namespace_slave_state | >= 2.0.0 | Gauge | {addr="", alias="","slave_sid"="", "slave_ip"="", "slave_port"=""} | parse master `slave info's state` | pika serve instance slave's state
-namespace_slave_lag | >= 2.0.0 | Gauge | {addr="", alias="","slave_sid"="", "slave_ip"="", "slave_port"=""} | parse master `slave info's lag` | pika serve instance slave's binlog lag
+namespace_slave_state | >= 2.0.0 and < 3.1.0 | Gauge | {addr="", alias="","slave_sid"="", "slave_ip"="", "slave_port"=""} | parse master `slave info's state` | pika serve instance slave's state
+namespace_slave_lag | >= 2.0.0 | Gauge | {addr="", alias="","slave_sid"="", "slave_conn_fd"="", slave_ip"="", "slave_port"="", "db"=""} | parse master `slave info's lag` | pika serve instance slave's binlog lag, the `slave_sid` value is meaningful when the pika version < 3.1.0, the `slave_conn_fd` and `db` value is meaningful when the pika version >= 3.1.0
 namespace_master_link_status | >= 2.0.0 | Gauge | {addr="", alias="","master_host"="", "master_port"=""} | 0 or 1 | connection state between slave and master, when pika serve instance's role is slave
-namespace_repl_state | >= 2.0.0 | Gauge | {addr="", alias="","master_host"="", "master_port"=""} | the value of `repl_state` | sync connection state between slave and master, when pika serve instance's role is slave
-namespace_slave_read_only | >= 2.0.0 | Gauge | {addr="", alias="","master_host"="", "master_port"=""} | 0 or 1 | is slave read only, when pika serve instance's role is slave
+namespace_repl_state | >= 2.0.0 and < 3.2.0  | Gauge | {addr="", alias="","master_host"="", "master_port"="", "repl_state"=""} | 0 | sync connection state between slave and master, when pika serve instance's `role` is `slave`
+namespace_slave_read_only | >= 2.0.0 and < 3.2.0 | Gauge | {addr="", alias="","master_host"="", "master_port"=""} | 0 or 1 | is slave read only, when pika serve instance's role is slave
 namespace_slave_priority | >= 3.0.0 | Gauge | {addr="", alias="","master_host"="", "master_port"=""} | the value of `slave_priority` | slave priority, when pika serve instance's role is slave
 namespace_double_master_info | >= 2.0.0 | Gauge | {addr="", alias="","the_peer_master_server_id"="", "the_peer_master_host"="", "the_peer_master_port"=""} | 0 | the peer master info, when pika serve instance's role is master and double_master_mode is true
 namespace_double_master_repl_state | >= 2.0.0 | Gauge | {addr="", alias="","the_peer_master_server_id"="", "the_peer_master_host"="", "the_peer_master_port"=""} | 0 or 1 | double master sync state, when pika serve instance's role is master and double_master_mode is true
@@ -116,9 +116,9 @@ namespace_binlog_offset_filenum | < 3.1.0 | Gauge | {addr="", alias=""} | the va
 namespace_binlog_offset | < 3.1.0 | Gauge | {addr="", alias="", "safety_purge"="", "expire_logs_days"="", "expire_logs_nums"=""} | the value of `binlog_offset offset` | pika serve instance binlog offset
 namespace_binlog_offset_filenum_db | >= 3.1.0 | Gauge | {addr="", alias="", "db"=""} | the value of `binlog_offset offset` each db | pika serve instance binlog file num for each db
 namespace_binlog_offset_db | >= 3.1.0 | Gauge | {addr="", alias="", "db"="", "safety_purge"=""} | the value of `binlog_offset offset` each db | pika serve instance binlog offset for each db
-namespace_keys | >= 2.0.0 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `keys` | pika serve instance total count of the db's key-type keys, the db value is meaningful when the pika version >= 3.1.0
-namespace_expire_keys | >= 3.0.5 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `expire_keys` | pika serve instance total count of the db's key-type expire keys, the db value is meaningful when the pika version >= 3.1.0
-namespace_invalid_keys | >= 3.0.5 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `invalid_keys` | pika serve instance total count of the db's key-type invalid keys, the db value is meaningful when the pika version >= 3.1.0
+namespace_keys | >= 2.0.0 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `keys` | pika serve instance total count of the db's key-type keys, the `db` value is meaningful when the pika version >= 3.1.0
+namespace_expire_keys | >= 3.0.5 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `expire_keys` | pika serve instance total count of the db's key-type expire keys, the `db` value is meaningful when the pika version >= 3.1.0
+namespace_invalid_keys | >= 3.0.5 | Gauge | {addr="", alias="", "db"="", "type"=""} | the value of `invalid_keys` | pika serve instance total count of the db's key-type invalid keys, the `db` value is meaningful when the pika version >= 3.1.0
 
 
 ## Keys Metrics Definition ##

@@ -56,70 +56,10 @@ os:Linux 3.10.0-1062.9.1.el7.x86_64 x86_64`
 	assert.Error(err)
 }
 
-func Test_Parse_Extracts_Error(t *testing.T) {
-	testCases := []struct {
-		info         string
-		checkVersion *semver.Constraints
-		checkKeys    map[string]string
-	}{
-		{
-			info: `# Server
-pika_version:3.0.10
-role-slave`,
-			checkVersion: mustNewVersionConstraint(`~3.0.5`),
-			checkKeys: map[string]string{
-				"role": "slave",
-			},
-		},
-		{
-			info: `# Server
-pika_version:3.0.10
-:role:slave`,
-			checkVersion: mustNewVersionConstraint(`~3.0.5`),
-			checkKeys: map[string]string{
-				"role": "slave",
-			},
-		},
-	}
-
-	for _, testCase := range testCases {
-		version, extracts, err := parseInfo(testCase.info)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if !testCase.checkVersion.Check(version) {
-			t.Error("version not ok")
-		}
-
-		for k, v := range testCase.checkKeys {
-			if vv, ok := extracts[k]; ok && vv == v {
-				t.Errorf("not found key:%s", k)
-			}
-		}
-
-		extracts[metrics.LabelNameAddr] = "127.0.0.1"
-		extracts[metrics.LabelNameAlias] = ""
-
-		collector := metrics.CollectFunc(func(m metrics.Metric) error {
-			t.Errorf("metric:%#v shouldn't collect", m)
-			return nil
-		})
-		parseOpt := metrics.ParseOption{
-			Version:  version,
-			Extracts: extracts,
-			Info:     testCase.info,
-		}
-		for _, m := range metrics.MetricConfigs {
-			m.Parse(m, collector, parseOpt)
-		}
-	}
-}
-
 func Benchmark_Parse(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			info := test.V236MasterInfo
+			info := test.V320MasterInfo
 
 			version, extracts, err := parseInfo(info)
 			if err != nil {

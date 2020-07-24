@@ -93,6 +93,59 @@ func (p *keyMatchParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
 	p.Parser.Parse(m, c, opt)
 }
 
+type regexParser struct {
+	name   string
+	source string
+	reg    *regexp.Regexp
+	Parser
+}
+
+func (p *regexParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
+	s := opt.Info
+	if p.source != "" {
+		s = opt.Extracts[p.source]
+	}
+
+	matchMaps := p.regMatchesToMap(s)
+	if len(matchMaps) == 0 {
+		log.Warnf("regexParser::Parse reg find sub match nil. name:%s text:%s", p.name, s)
+	}
+
+	extracts := make(map[string]string)
+	for k, v := range opt.Extracts {
+		extracts[k] = v
+	}
+
+	opt.Extracts = extracts
+	for _, matches := range matchMaps {
+		for k, v := range matches {
+			extracts[k] = v
+		}
+		p.Parser.Parse(m, c, opt)
+	}
+}
+
+func (p *regexParser) regMatchesToMap(s string) []map[string]string {
+	if s == "" {
+		return nil
+	}
+
+	multiMatches := p.reg.FindAllStringSubmatch(s, -1)
+	if len(multiMatches) == 0 {
+		log.Errorf("regexParser::regMatchesToMap reg find sub match nil. name:%s text:%s", p.name, s)
+		return nil
+	}
+
+	ms := make([]map[string]string, len(multiMatches))
+	for i, matches := range multiMatches {
+		ms[i] = make(map[string]string)
+		for j, name := range p.reg.SubexpNames() {
+			ms[i][name] = trimSpace(matches[j])
+		}
+	}
+	return ms
+}
+
 type normalParser struct{}
 
 func (p *normalParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
@@ -127,71 +180,6 @@ func (p *normalParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
 				m, m.ValueName)
 		}
 	})
-}
-
-type regexParser struct {
-	name string
-	reg  *regexp.Regexp
-}
-
-func (p *regexParser) Parse(m MetricMeta, c Collector, opt ParseOption) {
-	matchMaps := p.regMatchesToMap(opt.Info)
-
-	m.Lookup(func(m MetaData) {
-		for _, matches := range matchMaps {
-			metric := Metric{
-				MetaData:    m,
-				LabelValues: make([]string, len(m.Labels)),
-				Value:       defaultValue,
-			}
-
-			for i, labelName := range m.Labels {
-				labelValue, ok := findInMap(labelName, matches, opt.Extracts)
-				if !ok {
-					log.Debugf("regexParser::Parse not found label value. metricName:%s labelName:%s",
-						m.Name, labelName)
-				}
-
-				metric.LabelValues[i] = labelValue
-			}
-
-			if m.ValueName != "" {
-				if v, ok := findInMap(m.ValueName, matches, opt.Extracts); !ok {
-					log.Warnf("regexParser::Parse not found value. metricName:%s valueName:%s",
-						m.Name, m.ValueName)
-					return
-				} else {
-					metric.Value = convertToFloat64(v)
-				}
-			}
-
-			if err := c.Collect(metric); err != nil {
-				log.Errorf("regexParser::Parse metric collect failed. metric:%#v err:%s",
-					m, m.ValueName)
-			}
-		}
-	})
-}
-
-func (p *regexParser) regMatchesToMap(s string) []map[string]string {
-	if s == "" {
-		return nil
-	}
-
-	multiMatches := p.reg.FindAllStringSubmatch(s, -1)
-	if len(multiMatches) == 0 {
-		log.Errorf("regexParser::Parse reg find sub match nil. name:%s text:%s", p.name, s)
-		return nil
-	}
-
-	ms := make([]map[string]string, len(multiMatches))
-	for i, matches := range multiMatches {
-		ms[i] = make(map[string]string)
-		for j, name := range p.reg.SubexpNames() {
-			ms[i][name] = trimSpace(matches[j])
-		}
-	}
-	return ms
 }
 
 func findInMap(key string, ms ...map[string]string) (string, bool) {
