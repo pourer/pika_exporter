@@ -96,6 +96,7 @@ namespace_total_commands_processed | >= 2.0.0 | `Counter` | {addr="", alias=""} 
 namespace_is_bgsaving | >= 2.0.0 | `Counter` | {addr="", alias="", "bgsave_name"=""} | 0 or 1 | pika serve instance bg save info
 namespace_is_scaning_keyspace | >= 2.0.0 | `Counter` | {addr="", alias="", "keyspace_time"=""} | 0 or 1 | pika serve instance scan keyspace info
 namespace_is_compact | >= 2.0.0 | `Counter` | {addr="", alias="","compact_cron"="", "compact_interval":""} | 0 or 1 | pika serve instance compact info
+namespace_command_exec_count | >= 3.0.0 | `Counter` | {addr="", alias="","command"=""} | the value of the command executed count | pika serve instance the count of each command executed
 namespace_used_cpu_sys | >= 2.0.0 | `Counter` | {addr="", alias=""} | the value of `used_cpu_sys` | pika serve instance total count of used cpu sys
 namespace_used_cpu_user | >= 2.0.0 | `Counter` | {addr="", alias=""} | the value of `used_cpu_user` | pika serve instance total count of used cpu user
 namespace_used_cpu_sys_children | >= 2.0.0 | `Counter` | {addr="", alias=""} | the value of `used_cpu_sys_children` | pika serve instance children total count of used cpu user"

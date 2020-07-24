@@ -74,7 +74,7 @@ func (c *client) Select(db string) error {
 }
 
 func (c *client) Info() (string, error) {
-	return redis.String(c.conn.Do("INFO"))
+	return redis.String(c.conn.Do("INFO", "ALL"))
 }
 
 func (c *client) InfoKeySpaceZero() (string, error) {
