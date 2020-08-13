@@ -65,18 +65,17 @@ var collectStatsMetrics = map[string]MetricConfig{
 			ValueName: "is_scaning_keyspace",
 		},
 	},
-	"is_compact": {
+	"compact": {
 		Parser: &regexParser{
-			name:   "is_compact",
-			reg:    regexp.MustCompile(`is_compact:(?P<is_compact>(No|Yes))[\s\S]*compact_cron:(?P<compact_cron>[^\r\n]*)[\s\S]*compact_interval:(?P<compact_interval>[^\r\n]*)`),
+			name:   "compact",
+			reg:    regexp.MustCompile(`is_compact:(?P<is_compact>[^\r\n]*)[\s\S]*compact_cron:(?P<compact_cron>[^\r\n]*)[\s\S]*compact_interval:(?P<compact_interval>[^\r\n]*)`),
 			Parser: &normalParser{},
 		},
 		MetricMeta: &MetaData{
-			Name:      "is_compact",
-			Help:      "pika serve instance compact info",
-			Type:      metricTypeGauge,
-			Labels:    []string{LabelNameAddr, LabelNameAlias, "compact_cron", "compact_interval"},
-			ValueName: "is_compact",
+			Name:   "compact",
+			Help:   "pika serve instance compact info",
+			Type:   metricTypeGauge,
+			Labels: []string{LabelNameAddr, LabelNameAlias, "is_compact", "compact_cron", "compact_interval"},
 		},
 	},
 }

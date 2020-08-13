@@ -33,7 +33,16 @@ var collectReplicationMetrics = map[string]MetricConfig{
 			},
 			Parser: Parsers{
 				&versionMatchParser{
-					verC: mustNewVersionConstraint(`<3.1.0`),
+					verC: mustNewVersionConstraint(`<2.3.x`),
+					Parser: &regexParser{
+						name: "master_slave_info_slave_state",
+						reg: regexp.MustCompile(`slave\d+:ip=(?P<slave_ip>[\d.]+),port=(?P<slave_port>[\d.]+),` +
+							`state=(?P<slave_state>[a-z]+)`),
+						Parser: &normalParser{},
+					},
+				},
+				&versionMatchParser{
+					verC: mustNewVersionConstraint(`>=2.3.x,<3.1.0`),
 					Parser: &regexParser{
 						name: "master_slave_info_slave_state",
 						reg: regexp.MustCompile(`slave\d+:ip=(?P<slave_ip>[\d.]+),port=(?P<slave_port>[\d.]+),` +
@@ -62,7 +71,7 @@ var collectReplicationMetrics = map[string]MetricConfig{
 			},
 			Parser: Parsers{
 				&versionMatchParser{
-					verC: mustNewVersionConstraint(`<3.1.0`),
+					verC: mustNewVersionConstraint(`>=2.3.x,<3.1.0`),
 					Parser: &regexParser{
 						name: "master_slave_info_slave_lag_<3.1.0",
 						reg: regexp.MustCompile(`slave\d+:ip=(?P<slave_ip>[\d.]+),port=(?P<slave_port>[\d.]+),` +

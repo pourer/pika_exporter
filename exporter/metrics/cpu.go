@@ -6,7 +6,10 @@ func init() {
 
 var collectCPUMetrics = map[string]MetricConfig{
 	"used_cpu_sys": {
-		Parser: &normalParser{},
+		Parser: &versionMatchParser{
+			verC:   mustNewVersionConstraint(`>= 2.3.x`),
+			Parser: &normalParser{},
+		},
 		MetricMeta: &MetaData{
 			Name:      "used_cpu_sys",
 			Help:      "pika serve instance total count of used cpu sys",
@@ -16,7 +19,10 @@ var collectCPUMetrics = map[string]MetricConfig{
 		},
 	},
 	"used_cpu_user": {
-		Parser: &normalParser{},
+		Parser: &versionMatchParser{
+			verC:   mustNewVersionConstraint(`>= 2.3.x`),
+			Parser: &normalParser{},
+		},
 		MetricMeta: &MetaData{
 			Name:      "used_cpu_user",
 			Help:      "pika serve instance total count of used cpu user",
@@ -26,7 +32,10 @@ var collectCPUMetrics = map[string]MetricConfig{
 		},
 	},
 	"used_cpu_sys_children": {
-		Parser: &normalParser{},
+		Parser: &versionMatchParser{
+			verC:   mustNewVersionConstraint(`>= 2.3.x`),
+			Parser: &normalParser{},
+		},
 		MetricMeta: &MetaData{
 			Name:      "used_cpu_sys_children",
 			Help:      "pika serve instance children total count of used cpu sys",
@@ -36,7 +45,10 @@ var collectCPUMetrics = map[string]MetricConfig{
 		},
 	},
 	"used_cpu_user_children": {
-		Parser: &normalParser{},
+		Parser: &versionMatchParser{
+			verC:   mustNewVersionConstraint(`>= 2.3.x`),
+			Parser: &normalParser{},
+		},
 		MetricMeta: &MetaData{
 			Name:      "used_cpu_user_children",
 			Help:      "pika serve instance children total count of used cpu user",
