@@ -24,10 +24,14 @@ type exporter struct {
 	namespace           string
 	keyPatterns, keys   []dbKeyPair
 	scanCount           int
+	collectDuration     prometheus.Histogram
+	collectCount        prometheus.Counter
+	scrapeDuration      *prometheus.HistogramVec
+	scrapeErrors        *prometheus.CounterVec
+	scrapeLastError     *prometheus.GaugeVec
+	scrapeCount         *prometheus.CounterVec
+	up                  *prometheus.GaugeVec
 	keyValues, keySizes *prometheus.GaugeVec
-	scrapeDuration      prometheus.Gauge
-	scrapeErrors        prometheus.Gauge
-	scrapeCount         prometheus.Counter
 	mutex               *sync.Mutex
 	wg                  sync.WaitGroup
 	done                chan struct{}
@@ -58,6 +62,54 @@ func NewPikaExporter(dis discovery.Discovery, namespace string,
 }
 
 func (e *exporter) initMetrics() {
+	e.collectDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Namespace: e.namespace,
+		Name:      "exporter_collect_duration_seconds",
+		Help:      "the duration of pika-exporter collect in seconds",
+		Buckets: []float64{ // 1ms ~ 10s
+			0.001, 0.005, 0.01,
+			0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06, 0.065, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095, 0.1,
+			0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20,
+			0.25, 0.5, 0.75,
+			1, 2, 5, 10,
+		}})
+	e.collectCount = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: e.namespace,
+		Name:      "exporter_collect_count",
+		Help:      "the count of pika-exporter collect"})
+	e.scrapeDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: e.namespace,
+		Name:      "exporter_scrape_duration_seconds",
+		Help:      "the each of pika scrape duration in seconds",
+		Buckets: []float64{ // 1ms ~ 10s
+			0.001, 0.005, 0.01,
+			0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06, 0.065, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095, 0.1,
+			0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20,
+			0.25, 0.5, 0.75,
+			1, 2, 5, 10,
+		},
+	}, []string{metrics.LabelNameAddr, metrics.LabelNameAlias})
+	e.scrapeErrors = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: e.namespace,
+		Name:      "exporter_scrape_errors",
+		Help:      "the each of pika scrape error count",
+	}, []string{metrics.LabelNameAddr, metrics.LabelNameAlias})
+	e.scrapeLastError = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: e.namespace,
+		Name:      "exporter_last_scrape_error",
+		Help:      "the each of pika scrape last error",
+	}, []string{metrics.LabelNameAddr, metrics.LabelNameAlias, "error"})
+	e.scrapeCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: e.namespace,
+		Name:      "exporter_scrape_count",
+		Help:      "the each of pika scrape count",
+	}, []string{metrics.LabelNameAddr, metrics.LabelNameAlias})
+	e.up = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: e.namespace,
+		Name:      "up",
+		Help:      "the each of pika connection status",
+	}, []string{metrics.LabelNameAddr, metrics.LabelNameAlias})
+
 	e.keyValues = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: e.namespace,
 		Name:      "key_value",
@@ -66,18 +118,6 @@ func (e *exporter) initMetrics() {
 		Namespace: e.namespace,
 		Name:      "key_size",
 	}, []string{"addr", "alias", "db", "key", "key_type"})
-	e.scrapeDuration = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: e.namespace,
-		Name:      "exporter_last_scrape_duration_seconds",
-	})
-	e.scrapeErrors = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: e.namespace,
-		Name:      "exporter_last_scrape_error",
-	})
-	e.scrapeCount = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: e.namespace,
-		Name:      "exporter_scrape_count",
-	})
 }
 
 func (e *exporter) Close() error {
@@ -94,48 +134,69 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 		metric.Desc(describer)
 	}
 
+	ch <- e.collectDuration.Desc()
+	ch <- e.collectCount.Desc()
+
+	e.scrapeDuration.Describe(ch)
+	e.scrapeErrors.Describe(ch)
+	e.scrapeLastError.Describe(ch)
+	e.scrapeCount.Describe(ch)
+
+	e.up.Describe(ch)
+
 	e.keyValues.Describe(ch)
 	e.keySizes.Describe(ch)
-
-	ch <- e.scrapeDuration.Desc()
-	ch <- e.scrapeErrors.Desc()
-	ch <- e.scrapeCount.Desc()
 }
 
 func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	e.initMetrics()
+	startTime := time.Now()
+	defer func() {
+		e.collectCount.Inc()
+		e.collectDuration.Observe(time.Since(startTime).Seconds())
+		ch <- e.collectCount
+		ch <- e.collectDuration
+	}()
+
 	e.keySizes.Reset()
 	e.keyValues.Reset()
 
 	e.scrape(ch)
 
+	e.scrapeDuration.Collect(ch)
+	e.scrapeErrors.Collect(ch)
+	e.scrapeLastError.Collect(ch)
+	e.scrapeCount.Collect(ch)
+
+	e.up.Collect(ch)
+
 	e.keySizes.Collect(ch)
 	e.keyValues.Collect(ch)
-
-	ch <- e.scrapeDuration
-	ch <- e.scrapeErrors
-	ch <- e.scrapeCount
 }
 
 func (e *exporter) scrape(ch chan<- prometheus.Metric) {
 	startTime := time.Now()
-	errCount := 0
-
-	e.scrapeCount.Inc()
 
 	fut := newFuture()
 	for _, instance := range e.dis.GetInstances() {
 		fut.Add()
 		go func(addr, password, alias string) {
+			e.scrapeCount.WithLabelValues(addr, alias).Inc()
+			defer func() {
+				e.scrapeDuration.WithLabelValues(addr, alias).Observe(time.Since(startTime).Seconds())
+			}()
+
 			c, err := newClient(addr, password, alias)
 			if err != nil {
+				e.up.WithLabelValues(addr, alias).Set(0)
+
 				fut.Done(futureKey{addr: addr, alias: alias},
 					fmt.Errorf("exporter::scrape new pika client failed. err:%s", err.Error()))
 			} else {
 				defer c.Close()
+				e.up.WithLabelValues(addr, alias).Set(1)
 
 				fut.Add()
 				fut.Done(futureKey{addr: c.Addr(), alias: c.Alias()}, e.collectInfo(c, ch))
@@ -146,13 +207,12 @@ func (e *exporter) scrape(ch chan<- prometheus.Metric) {
 
 	for k, v := range fut.Wait() {
 		if v != nil {
-			errCount++
+			e.scrapeErrors.WithLabelValues(k.addr, k.alias).Inc()
+			e.scrapeLastError.WithLabelValues(k.addr, k.alias, v.Error()).Set(0)
+
 			log.Errorf("exporter::scrape collect pika failed. pika server:%#v err:%s", k, v.Error())
 		}
 	}
-
-	e.scrapeErrors.Set(float64(errCount))
-	e.scrapeDuration.Set(time.Now().Sub(startTime).Seconds())
 }
 
 func (e *exporter) collectInfo(c *client, ch chan<- prometheus.Metric) error {
