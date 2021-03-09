@@ -2,8 +2,9 @@ package exporter
 
 import (
 	"bufio"
-	"strings"
 	"errors"
+	"strings"
+
 	"github.com/Masterminds/semver"
 )
 
@@ -67,5 +68,9 @@ func fetchKV(s string) (k, v string) {
 
 func getVersion(extracted map[string]string) (version string) {
 	version, _ = extracted[pikaVersionKey]
+	vv := strings.Split(version, ".")
+	if len(vv) > 3 {
+		version = strings.Join(vv[:3], ".")
+	}
 	return
 }

@@ -4,6 +4,9 @@ var InfoCases = []struct {
 	Name string
 	Info string
 }{
+	{"v2.2.3.3_master", V2233MasterInfo},
+	{"v2.2.3.3_slave", V2233SlaveInfo},
+
 	{"v2.2.6_master", V226MasterInfo},
 	{"v2.2.6_slave", V226SlaveInfo},
 
