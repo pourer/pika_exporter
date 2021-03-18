@@ -68,7 +68,7 @@ var collectStatsMetrics = map[string]MetricConfig{
 	"compact": {
 		Parser: &regexParser{
 			name:   "compact",
-			reg:    regexp.MustCompile(`is_compact:(?P<is_compact>[^\r\n]*)[\s\S]*compact_cron:(?P<compact_cron>[^\r\n]*)[\s\S]*compact_interval:(?P<compact_interval>[^\r\n]*)`),
+			reg:    regexp.MustCompile(`is_compact:(?P<is_compact>[^\r\n]*)[\s\S]*compact_cron:(?P<compact_cron>[^\r\n]*)([\s\S]*compact_interval:(?P<compact_interval>[^\r\n]*))?`),
 			Parser: &normalParser{},
 		},
 		MetricMeta: &MetaData{
