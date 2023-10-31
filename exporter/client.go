@@ -85,6 +85,50 @@ func (c *client) InfoKeySpaceOne() (string, error) {
 	return redis.String(c.conn.Do("INFO", "KEYSPACE", 1))
 }
 
+func (c *client) Del(keys ...string) (int, error) {
+	ikeys := make([]interface{}, 0, len(keys))
+	for _, k := range keys {
+		ikeys = append(ikeys, k)
+	}
+	return redis.Int(c.conn.Do("DEL", ikeys...))
+}
+
+func (c *client) Set(key, value string) (string, error) {
+	return redis.String(c.conn.Do("SET", key, value))
+}
+
+func (c *client) Hset(key, field, value string) (int, error) {
+	return redis.Int(c.conn.Do("HSET", key, field, value))
+}
+
+func (c *client) Hget(key, field string) (string, error) {
+	return redis.String(c.conn.Do("HGET", key, field))
+}
+
+func (c *client) Lpush(key, element string) (int, error) {
+	return redis.Int(c.conn.Do("LPUSH", key, element))
+}
+
+func (c *client) Lrange(key string, start, stop int) ([]interface{}, error) {
+	return redis.Values(c.conn.Do("LRANGE", key, start, stop))
+}
+
+func (c *client) Zadd(key string, score float64, member string) (int, error) {
+	return redis.Int(c.conn.Do("ZADD", key, score, member))
+}
+
+func (c *client) Zcard(key string) (int, error) {
+	return redis.Int(c.conn.Do("ZCARD", key))
+}
+
+func (c *client) Sadd(key, member string) (int, error) {
+	return redis.Int(c.conn.Do("SADD", key, member))
+}
+
+func (c *client) Scard(key string) (int, error) {
+	return redis.Int(c.conn.Do("SCARD", key))
+}
+
 // Pika的SCAN命令，会顺序迭代当前db的快照，由于Pika允许重名五次，所以SCAN有优先输出顺序，依次为：string -> hash -> list -> zset -> set
 func (c *client) Scan(keyPattern string, count int) ([]string, error) {
 	if count == 0 {
