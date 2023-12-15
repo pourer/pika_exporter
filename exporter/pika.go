@@ -2,17 +2,18 @@ package exporter
 
 import (
 	"fmt"
+	"github.com/garyburd/redigo/redis"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/pourer/pika_exporter/discovery"
-
+	"github.com/pourer/pika_exporter/exporter/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
-	"github.com/pourer/pika_exporter/exporter/metrics"
 )
 
 type dbKeyPair struct {
@@ -32,6 +33,7 @@ type exporter struct {
 	scrapeCount         *prometheus.CounterVec
 	up                  *prometheus.GaugeVec
 	keyValues, keySizes *prometheus.GaugeVec
+	ping                *prometheus.CounterVec
 	mutex               *sync.Mutex
 	wg                  sync.WaitGroup
 	done                chan struct{}
@@ -118,6 +120,11 @@ func (e *exporter) initMetrics() {
 		Namespace: e.namespace,
 		Name:      "key_size",
 	}, []string{"addr", "alias", "db", "key", "key_type"})
+	e.ping = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: e.namespace,
+		Name:      "ping",
+		Help:      "ping error count",
+	}, []string{metrics.LabelNameAddr, metrics.LabelNameAlias, metrics.LabelNameMethod, metrics.LabelNameType})
 }
 
 func (e *exporter) Close() error {
@@ -146,6 +153,7 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 
 	e.keyValues.Describe(ch)
 	e.keySizes.Describe(ch)
+	e.ping.Describe(ch)
 }
 
 func (e *exporter) Collect(ch chan<- prometheus.Metric) {
@@ -174,6 +182,7 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 
 	e.keySizes.Collect(ch)
 	e.keyValues.Collect(ch)
+	e.ping.Collect(ch)
 }
 
 func (e *exporter) scrape(ch chan<- prometheus.Metric) {
@@ -199,8 +208,10 @@ func (e *exporter) scrape(ch chan<- prometheus.Metric) {
 				e.up.WithLabelValues(addr, alias).Set(1)
 
 				fut.Add()
+				fut.Add()
 				fut.Done(futureKey{addr: c.Addr(), alias: c.Alias()}, e.collectInfo(c, ch))
 				fut.Done(futureKey{addr: c.Addr(), alias: c.Alias()}, e.collectKeys(c))
+				fut.Done(futureKey{addr: c.Addr(), alias: c.Alias()}, e.collectPing(c))
 			}
 		}(instance.Addr, instance.Password, instance.Alias)
 	}
@@ -213,6 +224,95 @@ func (e *exporter) scrape(ch chan<- prometheus.Metric) {
 			log.Errorf("exporter::scrape collect pika failed. pika server:%#v err:%s", k, v.Error())
 		}
 	}
+}
+
+const (
+	prefixString = "ping_string_"
+	prefixHash   = "ping_hash_"
+	prefixList   = "ping_list_"
+	prefixSet    = "ping_set_"
+	prefixZset   = "ping_zset_"
+)
+
+var (
+	keyPingString string
+	keyPingHash   string
+	keyPingList   string
+	keyPingSet    string
+	keyPingZset   string
+)
+
+func (e *exporter) collectPing(c *client) error {
+
+	ts := strconv.FormatInt(time.Now().Unix(), 10)
+	keyPingString = prefixString + ts
+	keyPingHash = prefixHash + ts
+	keyPingList = prefixList + ts
+	keyPingSet = prefixSet + ts
+	keyPingZset = prefixZset + ts
+
+	defer func() {
+		_, err := c.Del(keyPingString, keyPingHash, keyPingList, keyPingSet, keyPingZset)
+		if err != nil {
+			log.Warnf("del %s %s %s %s %s from %s(%s) fail, err:%s",
+				keyPingString, keyPingHash, keyPingList, keyPingSet, keyPingZset, c.Addr(), c.Alias(), err.Error())
+		}
+	}()
+
+	// write
+	_, err := c.Set(keyPingString, keyPingString)
+	if err != nil {
+		e.ping.WithLabelValues(c.Addr(), c.Alias(), "write", "string").Inc()
+		log.Warnf("set %s %s to %s(%s) fail, err:%s", keyPingString, keyPingString, c.Addr(), c.Alias(), err.Error())
+	}
+	_, err = c.Hset(keyPingHash, keyPingHash, keyPingHash)
+	if err != nil {
+		e.ping.WithLabelValues(c.Addr(), c.Alias(), "write", "hash").Inc()
+		log.Warnf("hset %s %s %s to %s(%s) fail, err:%s", keyPingHash, keyPingHash, keyPingHash, c.Addr(), c.Alias(), err.Error())
+	}
+	_, err = c.Lpush(keyPingList, keyPingList)
+	if err != nil {
+		e.ping.WithLabelValues(c.Addr(), c.Alias(), "write", "list").Inc()
+		log.Warnf("lpush %s %s to %s(%s) fail, err:%s", keyPingList, keyPingList, c.Addr(), c.Alias(), err.Error())
+	}
+	_, err = c.Sadd(keyPingSet, keyPingSet)
+	if err != nil {
+		e.ping.WithLabelValues(c.Addr(), c.Alias(), "write", "set").Inc()
+		log.Warnf("sadd %s %s to %s(%s) fail, err:%s", keyPingSet, keyPingSet, c.Addr(), c.Alias(), err.Error())
+	}
+	_, err = c.Zadd(keyPingZset, 10, keyPingZset)
+	if err != nil {
+		e.ping.WithLabelValues(c.Addr(), c.Alias(), "write", "zset").Inc()
+		log.Warnf("zadd %s 10 %s to %s(%s) fail, err:%s", keyPingZset, keyPingZset, c.Addr(), c.Alias(), err.Error())
+	}
+
+	// read
+	_, err = c.Get(keyPingString)
+	if err != nil && err != redis.ErrNil {
+		e.ping.WithLabelValues(c.Addr(), c.Alias(), "read", "string").Inc()
+		log.Warnf("get %s from %s(%s) fail, err:%s", keyPingString, c.Addr(), c.Alias(), err.Error())
+	}
+	_, err = c.Hget(keyPingHash, keyPingHash)
+	if err != nil && err != redis.ErrNil {
+		e.ping.WithLabelValues(c.Addr(), c.Alias(), "read", "hash").Inc()
+		log.Warnf("hget %s %s from %s(%s) fail, err:%s", keyPingHash, keyPingHash, c.Addr(), c.Alias(), err.Error())
+	}
+	_, err = c.Lrange(keyPingList, 0, 1)
+	if err != nil {
+		e.ping.WithLabelValues(c.Addr(), c.Alias(), "read", "list").Inc()
+		log.Warnf("lrange %s 0 1 from %s(%s) fail, err:%s", keyPingList, c.Addr(), c.Alias(), err.Error())
+	}
+	_, err = c.Scard(keyPingSet)
+	if err != nil {
+		e.ping.WithLabelValues(c.Addr(), c.Alias(), "read", "set").Inc()
+		log.Warnf("scard %s from %s(%s) fail, err:%s", keyPingSet, c.Addr(), c.Alias(), err.Error())
+	}
+	_, err = c.Zcard(keyPingZset)
+	if err != nil {
+		e.ping.WithLabelValues(c.Addr(), c.Alias(), "read", "zset").Inc()
+		log.Warnf("zcard %s from %s(%s) fail, err:%s", keyPingZset, c.Addr(), c.Alias(), err.Error())
+	}
+	return nil
 }
 
 func (e *exporter) collectInfo(c *client, ch chan<- prometheus.Metric) error {

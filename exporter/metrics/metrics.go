@@ -1,8 +1,8 @@
 package metrics
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -11,8 +11,10 @@ const (
 )
 
 const (
-	LabelNameAddr  = "addr"
-	LabelNameAlias = "alias"
+	LabelNameAddr   = "addr"
+	LabelNameAlias  = "alias"
+	LabelNameMethod = "method"
+	LabelNameType   = "type"
 )
 
 type Describer interface {

@@ -45,4 +45,14 @@ var collectDataMetrics = map[string]MetricConfig{
 			ValueName: "db_tablereader_usage",
 		},
 	},
+	"db_fatal": {
+		Parser: &normalParser{},
+		MetricMeta: &MetaData{
+			Name:      "db_fatal",
+			Help:      "pika serve instance rocksdb background error",
+			Type:      metricTypeGauge,
+			Labels:    []string{LabelNameAddr, LabelNameAlias},
+			ValueName: "db_fatal",
+		},
+	},
 }
